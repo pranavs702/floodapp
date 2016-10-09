@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">FloodMapNavigator</string>
+    <string name="title_activity_maps">Flood Map Navigator</string>
+</resources>
