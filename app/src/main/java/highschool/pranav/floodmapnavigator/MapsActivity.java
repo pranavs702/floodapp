@@ -10,10 +10,11 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
+
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.support.v4.os.AsyncTaskCompat;
+
 import android.util.Log;
 
 import com.google.android.gms.appindexing.Action;
@@ -32,7 +33,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
-import com.jayway.restassured.path.json.JsonPath;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,6 +47,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.StringTokenizer;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,6 +58,7 @@ import org.json.JSONObject;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, LocationListener, GoogleApiClient.OnConnectionFailedListener {
 
     private final String FLOOD_MERGE_URL = "http://www.gdacs.org/floodmerge/data.aspx";
+
     private ArrayList<Flood> worldFlood;
     private GoogleMap mMap;
     /**
@@ -69,6 +75,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         // ATTENTION: This "addApi(AppIndex.API)"was auto-generated to implement the App Indexing API.
@@ -149,6 +156,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.setMapType(3);
         mMap.setMyLocationEnabled(true);
+        //New code added for permission issue
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
         mMap.setTrafficEnabled(true);
         mMap.getFocusedBuilding();
         mMap.setIndoorEnabled(true);
@@ -264,7 +273,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
-    private class DownloadWebpageTask extends AsyncTask<String, Void, String> {
+    private class DownloadWebpageTask extends AsyncTask<String, Void, ArrayList<Flood>> {
+
+        ArrayList<Flood> floodArray = new ArrayList<Flood>();
+
         @Override
         protected void onPreExecute() {
             Log.v("tag", "On pre execute");
@@ -272,26 +284,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         @Override
-        protected void onCancelled(String s) {
-            super.onCancelled(s);
+        protected void onCancelled(ArrayList<Flood> floodArray) {
+            super.onCancelled(floodArray);
         }
 
         @Override
-        protected String doInBackground(String... params) {
+        protected ArrayList<Flood> doInBackground(String... params) {
             Log.v("tag", "do in background");
             return queryFloodData();
 
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            Log.v("tag", s);
-
-            super.onPostExecute(s);
+        protected void onPostExecute(ArrayList<Flood> floodArray) {
+            Log.v("tag", "Size is " + floodArray.size());
+            for (Flood f: floodArray){
+                //mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION"));
+                //googleMap.addMarker(new MarkerOptions().position(new LatLng( YOUR LATITUDE, -YOUR LOINGITUDE)).title("Marker"));
+                //mMap.addMarker(new MarkerOptions().position(new LatLng( Double.parseDouble(f.getBoundBoxMaxLat()), -Double.parseDouble(f.getBoundBoxMaxLon()))).title("Flood Marker"));
+            }
+            super.onPostExecute(floodArray);
         }
 
-        private String queryFloodData() {
-            Log.v("tag", "query flood data");
+        private ArrayList<Flood> queryFloodData() {
+            //Log.v("tag", "query flood data");
             HttpURLConnection uConnect = null;
             URL fUrl = null;
             InputStream floodStream = null;
@@ -331,7 +347,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (!s.contains("AreasDataId")) {
 
                             Flood flood = setFloodDataValues(s);
-                            Log.v("tag", "reading flood data " + flood.getCountry());
+                            floodArray.add(flood);
+                            Log.v("tag", "reading flood data " + flood.getCountry());//This is for sample to see if parsing works
                         }
                     }
 
@@ -343,8 +360,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     e.printStackTrace();
                 }
             }
-            Log.v("tag", "returning complete flood  file data: " + floodFileData);
-            return floodFileData;
+            //Log.v("tag", "returning complete flood  file data: " + floodFileData);Not needed as parsing is successful
+            return floodArray;
         }
 
         /**
@@ -355,7 +372,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         private Flood setFloodDataValues(String floodLineData)
                 throws JSONException {
-
+            //Log.v("tag", "returning complete flood  floodLineData: " + floodLineData);
             StringTokenizer floodLine = new StringTokenizer(floodLineData, ";");
             int i = 1;
 
@@ -414,19 +431,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 HashMap<String, String> floodMap) throws JSONException {
             ArrayList<FloodLocation> locationArray = new ArrayList();
             String pointsInJson = floodMap.get("PointsInJsonFormat");
-            JsonPath jsonPath = JsonPath.from(pointsInJson);
+            JSONObject jsonResponse;
+            jsonResponse = new JSONObject(pointsInJson);
+            JSONArray pointsArray = jsonResponse.getJSONArray("Points");
 
-            String pointsStrArray = jsonPath.getJsonObject("Points").toString();
-            System.out.println("pointsInJson " + pointsInJson);
-
-            JSONArray pointsArray = new JSONArray(pointsStrArray);
             for (int i = 0; i < pointsArray.length(); i++) {
-
                 JSONObject jsonObj = pointsArray.getJSONObject(i);
+                String valid = "";
+                String xVal = "";
+                String yVal = "";
+                String coordinatesType = "";
+                /**
+                 * This is needed as not always all values are present
+                 */
 
-                FloodLocation loc = new FloodLocation(jsonObj.get("X").toString(), jsonObj
-                        .get("Y").toString(), jsonObj.get("CoordinatesType")
-                        .toString(), jsonObj.get("Valid").toString());
+                if (jsonObj.has("Valid"))
+                    valid = jsonObj.get("Valid").toString();
+                if (jsonObj.has("X"))
+                    xVal = jsonObj.get("X").toString();
+                if (jsonObj.has("Y"))
+                    yVal = jsonObj.get("Y").toString();
+                if (jsonObj.has("CoordinatesType"))
+                    coordinatesType = jsonObj.get("CoordinatesType").toString();
+
+
+                FloodLocation loc = new FloodLocation(xVal, yVal, coordinatesType, valid);
                 locationArray.add(loc);
 
             }
