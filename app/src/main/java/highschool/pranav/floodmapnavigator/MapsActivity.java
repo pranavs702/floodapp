@@ -29,6 +29,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -55,9 +57,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, LocationListener, GoogleApiClient.OnConnectionFailedListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
+        LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse {
 
-    private final String FLOOD_MERGE_URL = "http://www.gdacs.org/floodmerge/data.aspx";
+
 
     private ArrayList<Flood> worldFlood;
     private GoogleMap mMap;
@@ -102,6 +105,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         AppIndex.AppIndexApi.start(client, getIndexApiAction1());
 
         DownloadWebpageTask downloadWebpageTask = new DownloadWebpageTask();
+        downloadWebpageTask.responseDelegate = this;
         downloadWebpageTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new String[]{});
     }
 
@@ -172,7 +176,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION"));
                 mMap.addCircle(new CircleOptions().visible(true).center(userLoc).radius(100).strokeColor(0x001234ff).strokeWidth(10));
 
-                mMap.addPolygon(new PolygonOptions().strokeColor(0x000000).strokeWidth(5));
+                mMap.addPolygon(new PolygonOptions().strokeColor(0x000000).strokeWidth(10));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
 
             }
@@ -273,209 +277,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
-    private class DownloadWebpageTask extends AsyncTask<String, Void, ArrayList<Flood>> {
 
-        ArrayList<Flood> floodArray = new ArrayList<Flood>();
+    @Override
+    public void processFloodData(ArrayList<Flood> floods) {
+        this.worldFlood = floods;
+        int i;
+        for(i = 0; i<worldFlood.size(); i++){
+            Flood floodIterate = worldFlood.get(i);
+            Location min = floodIterate.getBoundBoxMin();
+            Location max = floodIterate.getBoundBoxMax();
+            int alertLevel = floodIterate.getAlertLevel();
 
-        @Override
-        protected void onPreExecute() {
-            Log.v("tag", "On pre execute");
-            super.onPreExecute();
-        }
+            LatLng minLoc = new LatLng(min.getLatitude(), min.getLongitude());
+            LatLng maxLoc = new LatLng(max.getLatitude(), max.getLongitude());
 
-        @Override
-        protected void onCancelled(ArrayList<Flood> floodArray) {
-            super.onCancelled(floodArray);
-        }
+            BitmapDescriptor icon;
 
-        @Override
-        protected ArrayList<Flood> doInBackground(String... params) {
-            Log.v("tag", "do in background");
-            return queryFloodData();
-
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<Flood> floodArray) {
-            Log.v("tag", "Size is " + floodArray.size());
-            for (Flood f: floodArray){
-                //mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION"));
-                //googleMap.addMarker(new MarkerOptions().position(new LatLng( YOUR LATITUDE, -YOUR LOINGITUDE)).title("Marker"));
-                //mMap.addMarker(new MarkerOptions().position(new LatLng( Double.parseDouble(f.getBoundBoxMaxLat()), -Double.parseDouble(f.getBoundBoxMaxLon()))).title("Flood Marker"));
+            switch(alertLevel){
+                case 2:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                    break;
+                case 3:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE);
+                    break;
+                case 4:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    break;
+                default:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
             }
-            super.onPostExecute(floodArray);
+            mMap.addMarker(new MarkerOptions()
+                    .position(minLoc)
+                    .icon(icon)
+                    .title("MIN FLOOD" + alertLevel));
+            mMap.addMarker(new MarkerOptions()
+                    .position(maxLoc)
+                    .icon(icon)
+                    .title("MAX FLOOD" + alertLevel));
         }
-
-        private ArrayList<Flood> queryFloodData() {
-            //Log.v("tag", "query flood data");
-            HttpURLConnection uConnect = null;
-            URL fUrl = null;
-            InputStream floodStream = null;
-            BufferedReader floodReader = null;
-            String floodFileData = "";
-            try {
-                fUrl = new URL(FLOOD_MERGE_URL);
-            } catch (MalformedURLException e) {
-                Log.v("tag", "malformed url " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            if (fUrl != null) {
-                try {
-                    uConnect = (HttpURLConnection) fUrl.openConnection();
-                } catch (IOException e) {
-                    Log.v("tag", "io exception in opening connection " + e.getLocalizedMessage());
-                    e.printStackTrace();
-                }
-            }
-
-            if (uConnect != null) {
-                try {
-                    floodStream = uConnect.getInputStream();
-                } catch (IOException e) {
-                    Log.v("tag", "io exception in getting input stream " + e.getLocalizedMessage());
-                    e.printStackTrace();
-                }
-            }
-            if (floodStream != null) {
-                floodReader = new BufferedReader(new InputStreamReader(floodStream));
-                String floodString;
-                try {
-                    floodFileData = floodReader.readLine();
-                    String[] floodData = floodFileData.split("<br>");
-                    for (String s : floodData) {
-                        if (!s.contains("AreasDataId")) {
-
-                            Flood flood = setFloodDataValues(s);
-                            floodArray.add(flood);
-                            Log.v("tag", "reading flood data " + flood.getCountry());//This is for sample to see if parsing works
-                        }
-                    }
-
-
-                } catch (IOException e) {
-                    Log.v("tag", "io exception in reading flood data " + e.getLocalizedMessage());
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-            //Log.v("tag", "returning complete flood  file data: " + floodFileData);Not needed as parsing is successful
-            return floodArray;
-        }
-
-        /**
-         * @param floodLineData
-         * @return
-         * @throws JSONException
-         */
-
-        private Flood setFloodDataValues(String floodLineData)
-                throws JSONException {
-            //Log.v("tag", "returning complete flood  floodLineData: " + floodLineData);
-            StringTokenizer floodLine = new StringTokenizer(floodLineData, ";");
-            int i = 1;
-
-            HashMap<String, String> floodMap = new HashMap<String, String>();
-            while (floodLine.hasMoreElements() && i < 13) {
-                String floodAttributes = floodLine.nextElement().toString();
-
-                if (floodAttributes.contains("\\")) {
-                    floodAttributes = stripCharacter(floodAttributes);
-                }
-                if (i == 1)
-                    floodMap.put("AreasDataId", floodAttributes);
-                if (i == 2)
-                    floodMap.put("AreaId", floodAttributes);
-                if (i == 3)
-                    floodMap.put("Country", floodAttributes);
-                if (i == 4)
-                    floodMap.put("AlertLevel", floodAttributes);
-                if (i == 5)
-                    floodMap.put("Description", floodAttributes);
-                if (i == 6)
-                    floodMap.put("TypePointArea", floodAttributes);
-                if (i == 7)
-                    floodMap.put("PointsInJsonFormat", floodAttributes);
-                if (i == 8)
-                    floodMap.put("PointsNumber", floodAttributes);
-                if (i == 9)
-                    floodMap.put("BoundingBoxLonMin", floodAttributes);
-                if (i == 10)
-                    floodMap.put("BoundingBoxLonMax", floodAttributes);
-                if (i == 11)
-                    floodMap.put("BoundingBoxLatMin", floodAttributes);
-                if (i == 12)
-                    floodMap.put("BoundingBoxLatMax", floodAttributes);
-                i++;
-            }
-
-            ArrayList<FloodLocation> locationArray = new ArrayList();
-            locationArray = getListOfPointers(floodMap);
-            Flood flood = new Flood(locationArray, floodMap.get("Country")
-                    .toString(), floodMap.get("BoundingBoxLatMin").toString(),
-                    floodMap.get("BoundingBoxLatMax").toString(), floodMap.get(
-                    "BoundingBoxLonMin").toString(), floodMap.get(
-                    "BoundingBoxLonMax").toString(), floodMap.get(
-                    "AlertLevel"));
-            return flood;
-        }
-
-        /**
-         * Parse JSON Points Data as set in ArrayList for Location
-         *
-         * @throws JSONException
-         */
-
-        private ArrayList<FloodLocation> getListOfPointers(
-                HashMap<String, String> floodMap) throws JSONException {
-            ArrayList<FloodLocation> locationArray = new ArrayList();
-            String pointsInJson = floodMap.get("PointsInJsonFormat");
-            JSONObject jsonResponse;
-            jsonResponse = new JSONObject(pointsInJson);
-            JSONArray pointsArray = jsonResponse.getJSONArray("Points");
-
-            for (int i = 0; i < pointsArray.length(); i++) {
-                JSONObject jsonObj = pointsArray.getJSONObject(i);
-                String valid = "";
-                String xVal = "";
-                String yVal = "";
-                String coordinatesType = "";
-                /**
-                 * This is needed as not always all values are present
-                 */
-
-                if (jsonObj.has("Valid"))
-                    valid = jsonObj.get("Valid").toString();
-                if (jsonObj.has("X"))
-                    xVal = jsonObj.get("X").toString();
-                if (jsonObj.has("Y"))
-                    yVal = jsonObj.get("Y").toString();
-                if (jsonObj.has("CoordinatesType"))
-                    coordinatesType = jsonObj.get("CoordinatesType").toString();
-
-
-                FloodLocation loc = new FloodLocation(xVal, yVal, coordinatesType, valid);
-                locationArray.add(loc);
-
-            }
-
-            return locationArray;
-        }
-
-
-        /**
-         * Stripping / from Points JSON
-         *
-         * @param s
-         * @return
-         */
-
-        private String stripCharacter(String s) {
-
-            return s.replace("\\", "");
-        }
-
-
+        //
     }
 }
+

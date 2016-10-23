@@ -4,33 +4,30 @@ package highschool.pranav.floodmapnavigator;
  * Created by pranavandprathik on 10/19/16.
  */
 
+import android.location.Location;
+
 import java.util.ArrayList;
 import highschool.pranav.floodmapnavigator.FloodLocation;
 
 public class Flood {
     private ArrayList<FloodLocation> points;
     private String country;
-    private String boundBoxMinLat;
-    private String boundBoxMaxLat;
+    private Location boundBoxMin;
+    private Location boundBoxMax;
 
-    private String boundBoxMinLon;
-    private String boundBoxMaxLon;
-    private String alertLevel;
+    private int alertLevel;
     private int pointsNumber;
 
     Flood(ArrayList<FloodLocation> pointsIn, String countryIn,
-                 String bBMInLat, String bBMaxLat, String bMinLon, String bMaxLon,
-                 String alertLevelIn) {
+          Location bBMIn, Location bBMax,
+                 int alertLevelIn) {
         points = pointsIn;
         country = countryIn;
-        boundBoxMinLat = bBMInLat;
-        boundBoxMaxLat = bBMaxLat;
-        boundBoxMinLon = bMinLon;
-        boundBoxMaxLon = bMaxLon;
+        boundBoxMax = bBMax;
+        boundBoxMin = bBMIn;
         alertLevel = alertLevelIn;
 
     }
-
 
 
     public ArrayList<FloodLocation> getPoints() {
@@ -41,25 +38,18 @@ public class Flood {
         return country;
     }
 
-    public String getBoundBoxMinLat() {
-        return boundBoxMinLat;
+    public Location getBoundBoxMin() {
+        return boundBoxMin;
     }
 
-    public String getBoundBoxMaxLat() {
-        return boundBoxMaxLat;
+    public Location getBoundBoxMax() {
+        return boundBoxMax;
     }
 
-    public String getAlertLevel() {
+    public int getAlertLevel() {
         return alertLevel;
     }
 
-    public String getBoundBoxMinLon() {
-        return boundBoxMinLon;
-    }
-
-    public String getBoundBoxMaxLon() {
-        return boundBoxMaxLon;
-    }
     public int getPointsNumber() {
         return pointsNumber;
     }
