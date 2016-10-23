@@ -50,6 +50,10 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
     }
 
 
+    /**
+     * Querying entire Flood Data
+     * @return
+     */
     private String queryFloodData() {
         floodArray = new ArrayList<Flood>();
         //Log.v("tag", "query flood data");
@@ -117,6 +121,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
     private Flood setFloodDataValues(String floodLineData)
             throws JSONException {
         //Log.v("tag", "returning complete flood  floodLineData: " + floodLineData);
+        //Parse data by ;
         StringTokenizer floodLine = new StringTokenizer(floodLineData, ";");
         int i = 1;
 
