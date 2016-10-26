@@ -60,8 +60,6 @@ import org.json.JSONObject;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse {
 
-
-
     private ArrayList<Flood> worldFlood;
     private GoogleMap mMap;
     /**
@@ -79,7 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // ATTENTION: This was auto-generated to implement the App Indexing API.5
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         // ATTENTION: This "addApi(AppIndex.API)"was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -278,8 +276,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
+    /**
+     * This is for actual plotting of data being called from OnPostExecute of DownloadWebPage Task
+     *
+     * @param floods
+     */
     @Override
-    public void processFloodData(ArrayList<Flood> floods) {
+    public void processFloodData(ArrayList<Flood> floods, ArrayList<LatLng> latLngArrayList) {
         this.worldFlood = floods;
         int i;
         for(i = 0; i<worldFlood.size(); i++){
@@ -304,7 +307,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
                     break;
                 default:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
             }
             mMap.addMarker(new MarkerOptions()
                     .position(minLoc)
@@ -314,6 +317,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .position(maxLoc)
                     .icon(icon)
                     .title("MAX FLOOD" + alertLevel));
+            /**
+             * To Do is to either plot Tiles with Points Data or draw a ploygon/layout with max and min lat and long coordinates
+             */
+            /**
+             * Once the flood Data is mapped we need to suggest user to better elevation in MAP using the coordinates for alternate paths
+             */
+             //Loop to iterate latLangArrayList for tiles mapping
+            for (LatLng latLng : floodIterate.getLatLngArrayList()) {
+                //This is place holder for adding tiles as Polygon
+
+
+            }
+            /**
+             * Restrict data by country the user is in
+             *
+             */
+            /**
+             * Add timer for auto refresh of flood data
+             */
         }
         //
     }

@@ -18,17 +18,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import com.google.android.gms.maps.model.LatLng;
 
 public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     public interface FloodAssyncResponse {
         //define any methods
-        public void processFloodData(ArrayList<Flood> floods);
+        public void processFloodData(ArrayList<Flood> floods, ArrayList<LatLng> latLngArrayList);
+
     }
 
     private final String FLOOD_MERGE_URL = "http://www.gdacs.org/floodmerge/data.aspx";
     public FloodAssyncResponse responseDelegate;
     private ArrayList<Flood> floodArray;
+    private ArrayList<LatLng> latLngArrayList;
 
     @Override
     protected void onPreExecute() {
@@ -39,7 +42,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String s) {
         super.onPostExecute(s);
-        responseDelegate.processFloodData(floodArray);
+        responseDelegate.processFloodData(floodArray,latLngArrayList);
     }
 
     @Override
@@ -52,6 +55,9 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     /**
      * Querying entire Flood Data
+     * This will access live data from FLOOD_MERGE_URL
+     * After checking the internet connection
+     *
      * @return
      */
     private String queryFloodData() {
@@ -69,6 +75,9 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
             e.printStackTrace();
         }
 
+        /**
+         * http connection is opened to the flood website url
+         */
         if (fUrl != null) {
             try {
                 uConnect = (HttpURLConnection) fUrl.openConnection();
@@ -86,6 +95,10 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
                 e.printStackTrace();
             }
         }
+        /**
+         * Entier data is downloaded and header is stripped
+         * This also stores all flood data that is parsed in flood array list
+         */
         if (floodStream != null) {
             floodReader = new BufferedReader(new InputStreamReader(floodStream));
             try {
@@ -96,7 +109,9 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
                         Flood flood = setFloodDataValues(s);
                         floodArray.add(flood);
+                        latLngArrayList = flood.getMaxMinValues(flood.getPoints(),flood.getBoundBoxMin().getLatitude(),flood.getBoundBoxMax().getLatitude(),flood.getBoundBoxMin().getLongitude(),flood.getBoundBoxMax().getLongitude());
                         Log.v("tag", "reading flood data " + flood.getCountry());//This is for sample to see if parsing works
+                        flood.setLatLngArrayList(latLngArrayList);//Set the LatLng Bondaries for tiles in Flood Object, This will be used for setting markers later
                     }
                 }
 
@@ -113,6 +128,9 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
     }
 
     /**
+     * Each of the line data is parsed here
+     * and stored in Flood object
+     * For Points data it is converted to JSON and stored in FLoodLocation obejct as array list
      * @param floodLineData
      * @return
      * @throws JSONException
@@ -128,6 +146,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
         HashMap<String, String> floodMap = new HashMap<String, String>();
         while (floodLine.hasMoreElements() && i < 13) {
             String floodAttributes = floodLine.nextElement().toString();
+            //THis is used for stripping \ before parsing JSON points object
 
             if (floodAttributes.contains("\\")) {
                 floodAttributes = stripCharacter(floodAttributes);
@@ -184,7 +203,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     /**
      * Parse JSON Points Data as set in ArrayList for Location
-     *
+     * Continuation of JSON parsing and accessing Pointers data
      * @throws JSONException
      */
 
@@ -216,7 +235,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
                 coordinatesType = jsonObj.get("CoordinatesType").toString();
 
 
-            FloodLocation loc = new FloodLocation(xVal, yVal, coordinatesType, valid);
+            FloodLocation loc = new FloodLocation(Integer.parseInt(xVal), Integer.parseInt(yVal), coordinatesType, valid);
             locationArray.add(loc);
 
         }
@@ -227,7 +246,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     /**
      * Stripping / from Points JSON
-     *
+     * This is needed to Parse the JSON as there is extra /
      * @param s
      * @return
      */
