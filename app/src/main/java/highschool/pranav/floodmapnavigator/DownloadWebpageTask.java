@@ -24,7 +24,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     public interface FloodAssyncResponse {
         //define any methods
-        public void processFloodData(ArrayList<Flood> floods, ArrayList<LatLng> latLngArrayList);
+        public void processFloodData(ArrayList<Flood> floods);
 
     }
 
@@ -42,7 +42,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String s) {
         super.onPostExecute(s);
-        responseDelegate.processFloodData(floodArray,latLngArrayList);
+        responseDelegate.processFloodData(floodArray);
     }
 
     @Override

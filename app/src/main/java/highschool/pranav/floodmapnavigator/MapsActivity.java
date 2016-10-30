@@ -4,6 +4,7 @@ import android.*;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -17,6 +18,9 @@ import android.os.Bundle;
 
 import android.util.Log;
 
+import com.directions.route.Route;
+import com.directions.route.RouteException;
+import com.directions.route.RoutingListener;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
@@ -46,6 +50,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
@@ -58,10 +63,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
-        LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse {
+        LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
 
     private ArrayList<Flood> worldFlood;
     private GoogleMap mMap;
+    //https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
+    //Create an Interface Routing Listener Interface
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -282,7 +289,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * @param floods
      */
     @Override
-    public void processFloodData(ArrayList<Flood> floods, ArrayList<LatLng> latLngArrayList) {
+    public void processFloodData(ArrayList<Flood> floods) {
         this.worldFlood = floods;
         int i;
         for(i = 0; i<worldFlood.size(); i++){
@@ -318,7 +325,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .icon(icon)
                     .title("MAX FLOOD" + alertLevel));
             /**
-             * To Do is to either plot Tiles with Points Data or draw a ploygon/layout with max and min lat and long coordinates
+             * Plotting 4 points to highlight flood path based on max and min coordinates
+             * This is done with Polygon
+             */
+        ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
+//          Collections.reverse(points);
+            PolygonOptions rectOptions = new PolygonOptions()
+                    .addAll(points).fillColor(6987504);
+            rectOptions.strokeColor(Color.CYAN).strokeWidth(5);
+            mMap.addPolygon(rectOptions);
+
+
+            /**
+             * To Do is to either plot Tiles with Points Data or draw a polygon/layout with max and min lat and long coordinates
              */
             /**
              * Once the flood Data is mapped we need to suggest user to better elevation in MAP using the coordinates for alternate paths
@@ -326,18 +345,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
              //Loop to iterate latLangArrayList for tiles mapping
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
-
+                BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
+                mMap.addMarker( new MarkerOptions().position(latLng).title("POINTERS").icon(icon2));
 
             }
             /**
+             * Elevation API integration for safe route
+             */
+            /**
+             *
              * Restrict data by country the user is in
              *
              */
             /**
              * Add timer for auto refresh of flood data
              */
+        //Call the method or logic to calculate the route and map
+            //line # 354
+           // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
         }
         //
+    }
+
+    @Override
+    public void onRoutingFailure(RouteException e) {
+
+    }
+
+    @Override
+    public void onRoutingStart() {
+
+    }
+
+    @Override
+    public void onRoutingSuccess(ArrayList<Route> arrayList, int i) {
+    //Implrmrnt code in here
+        //line 380 code to be here
+        //create a new method after porcessing flood
+    }
+
+    @Override
+    public void onRoutingCancelled() {
+
     }
 }
 

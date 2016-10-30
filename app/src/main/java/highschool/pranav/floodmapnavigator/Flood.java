@@ -100,6 +100,11 @@ public class Flood {
      * This logic for tiles ca
      * @return
      */
+    /* this.x = (lon + 180) * 360;
+    this.y = (lat + 90) * 180; */
+    // TO CONVERT X and Y into lat and lon - google GIS for more info
+    // lon = x/360 - 180
+    // lat = y/180 - 90
     public ArrayList<LatLng> getMaxMinValues(ArrayList<FloodLocation> poinstArray, Double minLat, Double maxLat, Double minLong, Double maxLong) {
         ArrayList<LatLng> latLngArrayList = new ArrayList<LatLng>();
         /**
@@ -120,26 +125,21 @@ public class Flood {
         int ySize = yArrayList.size();
         int xDiff = xMax - xMin;
         int yDiff = yMax - yMin;
-        double xScale = (maxLat - minLat) / xDiff;
-        double yScale = (maxLong - minLong) / yDiff;
+        double xScale = 360/4000.0;
+        double yScale = 180/2000.0;
         //Log.v("tag", "reading xScale " + xScale);
         //Log.v("tag", "reading yScale " + yScale);
 
         double newLat =0;
         double newLong = 0;
-        while (xSize > 0 || ySize > 0) {
-
-            if (xSize!=0)
-                newLat = minLat + xScale;
-            if (ySize!=0)
-                newLong = minLong + yScale;
-            LatLng latLng = new LatLng(newLat,newLong);
-            Log.v("tag", "reading lattitude " + newLat);
-            Log.v("tag", "reading longitude " + newLong);
-
-            xSize--;
-            ySize--;
-            latLngArrayList.add(latLng);
+//
+        for(FloodLocation loc: poinstArray){
+            int x = loc.getX();
+            int y = loc.getY();
+            double latitude = y*yScale - 90;
+            double longitude = x*xScale - 180;
+            LatLng llg = new LatLng(-1 *latitude, longitude);
+            latLngArrayList.add(llg);
         }
         return latLngArrayList;
     }
