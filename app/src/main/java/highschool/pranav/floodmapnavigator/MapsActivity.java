@@ -2,6 +2,7 @@ package highschool.pranav.floodmapnavigator;
 
 import android.*;
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -18,8 +19,10 @@ import android.os.Bundle;
 
 import android.util.Log;
 
+import com.directions.route.AbstractRouting;
 import com.directions.route.Route;
 import com.directions.route.RouteException;
+import com.directions.route.Routing;
 import com.directions.route.RoutingListener;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -66,6 +69,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
 
     private ArrayList<Flood> worldFlood;
+
+    private ProgressDialog progressDialog;
+
     private GoogleMap mMap;
     //https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
     //Create an Interface Routing Listener Interface
@@ -365,6 +371,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
            // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
         }
         //
+    }
+
+    //route calculation
+    //Need to get latLngStart and latLngEnd
+    public void route(LatLng latLngStart, LatLng latLngEnd) {
+
+        progressDialog = ProgressDialog.show(this, "Please wait.",
+                "Fetching route information.", true);
+        Routing routing = new Routing.Builder()
+                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .withListener(this)
+                .alternativeRoutes(true)
+                .waypoints(latLngStart, latLngEnd)
+                .build();
+        routing.execute();
+
     }
 
     @Override
