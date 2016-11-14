@@ -41,7 +41,11 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.PolyUtil;
 
 
 import java.io.BufferedReader;
@@ -55,6 +59,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import java.util.ArrayList;
@@ -67,6 +72,10 @@ import org.json.JSONObject;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
+
+    final double floodLat = 112.71;
+    final double floodLong = 109.71;
+    private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
 
     private ArrayList<Flood> worldFlood;
 
@@ -136,8 +145,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
 
             if (loc != null) {
-                LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
-
+                //LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
+                LatLng userLoc = userFloodLocation;
                 mMap.addMarker(new MarkerOptions().position(userLoc).title("YOU ARE HERE"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
                 //mMap.animateCamera(CameraUpdateFactory.zoomTo(1090));
@@ -182,8 +191,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
 
             if (loc != null) {
-                LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
-
+                //LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
+                LatLng userLoc = userFloodLocation;
                 mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION"));
                 mMap.addCircle(new CircleOptions().visible(true).center(userLoc).radius(100).strokeColor(0x001234ff).strokeWidth(10));
 
@@ -298,18 +307,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void processFloodData(ArrayList<Flood> floods) {
         this.worldFlood = floods;
         int i;
-        for(i = 0; i<worldFlood.size(); i++){
+        Flood userFlood = null;
+        for (i = 0; i < worldFlood.size(); i++) {
             Flood floodIterate = worldFlood.get(i);
+
             Location min = floodIterate.getBoundBoxMin();
             Location max = floodIterate.getBoundBoxMax();
+
             int alertLevel = floodIterate.getAlertLevel();
 
             LatLng minLoc = new LatLng(min.getLatitude(), min.getLongitude());
             LatLng maxLoc = new LatLng(max.getLatitude(), max.getLongitude());
-
+            //if (userFloodLocation.latitude > minLoc.latitude && userFloodLocation.latitude < maxLoc.latitude)
             BitmapDescriptor icon;
 
-            switch(alertLevel){
+            switch (alertLevel) {
                 case 2:
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
                     break;
@@ -334,12 +346,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
              * Plotting 4 points to highlight flood path based on max and min coordinates
              * This is done with Polygon
              */
-        ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
+            ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
 //          Collections.reverse(points);
+
             PolygonOptions rectOptions = new PolygonOptions()
                     .addAll(points).fillColor(6987504);
             rectOptions.strokeColor(Color.CYAN).strokeWidth(5);
-            mMap.addPolygon(rectOptions);
+
+            Polygon polygon = mMap.addPolygon(rectOptions);
+            boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
+            if(containsLoc){
+                userFlood = floodIterate;
+            }
 
 
             /**
@@ -348,13 +366,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             /**
              * Once the flood Data is mapped we need to suggest user to better elevation in MAP using the coordinates for alternate paths
              */
-             //Loop to iterate latLangArrayList for tiles mapping
+            //Loop to iterate latLangArrayList for tiles mapping
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-                mMap.addMarker( new MarkerOptions().position(latLng).title("POINTERS").icon(icon2));
-
+                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS").icon(icon2));
             }
+
+
+
             /**
              * Elevation API integration for safe route
              */
@@ -370,20 +390,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //line # 354
            // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
         }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
+        // LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
+        LatLng userLoc = userFloodLocation;
+        ArrayList<LatLng> floodStartEndLocs = new ArrayList();
+        floodStartEndLocs.add(userLoc);
+
+        if(userFlood!=null) {
+
+        }
+
+        LatLng endLoc = new LatLng(floodLat + 1, floodLong + 1);
+        Log.d("check", "ROUTING");
+        route(floodStartEndLocs);
         //
     }
 
     //route calculation
     //Need to get latLngStart and latLngEnd
-    public void route(LatLng latLngStart, LatLng latLngEnd) {
+    public void route(ArrayList<LatLng> startEndLocs) {
 
         progressDialog = ProgressDialog.show(this, "Please wait.",
                 "Fetching route information.", true);
         Routing routing = new Routing.Builder()
-                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .travelMode(Routing.TravelMode.WALKING)
                 .withListener(this)
                 .alternativeRoutes(true)
-                .waypoints(latLngStart, latLngEnd)
+                .waypoints(startEndLocs)
                 .build();
         routing.execute();
 
@@ -391,19 +427,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingFailure(RouteException e) {
-
+        Log.d("check", "ROUTING FALIURE");
+        progressDialog.hide();
+        progressDialog = ProgressDialog.show(this, "FAILED TO ROUTE", e.getLocalizedMessage(), false, true);
     }
 
     @Override
     public void onRoutingStart() {
-
+        Log.d("check", "ROUTING START");
     }
 
     @Override
-    public void onRoutingSuccess(ArrayList<Route> arrayList, int i) {
-    //Implrmrnt code in here
+    public void onRoutingSuccess(ArrayList<Route> routes, int shortestPathIndex) {
+        Log.d("check", "ROUTING SUCESS");
+        progressDialog.hide();
+        //Implement code in here
         //line 380 code to be here
         //create a new method after porcessing flood
+        Route route =  routes.get(shortestPathIndex);
+        List<LatLng> points = route.getPoints();
+        for(int i = 0; i<points.size(); i++){
+            LatLng point = points.get(i);
+        }
+        PolylineOptions rectOptions = new PolylineOptions()
+                .addAll(points);
+        rectOptions.color(Color.BLACK).width(5);
+        mMap.addPolyline(rectOptions);
+        Log.d("check", "ROUTING SUCESS TWO");
     }
 
     @Override
