@@ -73,8 +73,8 @@ import org.json.JSONObject;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
 
-    final double floodLat = 112.71;
-    final double floodLong = 109.71;
+    final double floodLat = 35.56360612905;
+    final double floodLong = -112.710044076;//-106.44003240;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
 
     private ArrayList<Flood> worldFlood;
@@ -355,7 +355,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             Polygon polygon = mMap.addPolygon(rectOptions);
             boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
-            if(containsLoc){
+            if (containsLoc) {
                 userFlood = floodIterate;
             }
 
@@ -370,9 +370,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS").icon(icon2));
+                // Log.v("MY POINTERS " + );
+                Log.v("tag", "MY POINTER Lat" + latLng.latitude);
+                Log.v("tag", "MY POINTER Lat" + latLng.longitude);
+                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
             }
-
 
 
             /**
@@ -386,9 +388,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             /**
              * Add timer for auto refresh of flood data
              */
-        //Call the method or logic to calculate the route and map
+            //Call the method or logic to calculate the route and map
             //line # 354
-           // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
+            // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
+
         }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -399,11 +402,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ArrayList<LatLng> floodStartEndLocs = new ArrayList();
         floodStartEndLocs.add(userLoc);
 
-        if(userFlood!=null) {
+        if (userFlood != null) {
 
         }
-
-        LatLng endLoc = new LatLng(floodLat + 1, floodLong + 1);
+        //By default added end location
+        //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
+        //so we will have to create an array of points within the flood, annd put the call in a for-loop,
+        // if-statement combo that will iterate through the array and get each value and pass it to the API, then check based on our parameters we have with the if-statement]
+        //Based on the previous steps,
+        //we can add all the eligible points to and array and plot these, then use one of the available algorithms{breath first search, depth first search, etc.]
+        LatLng endLoc = new LatLng(userLoc.latitude + 1, userLoc.longitude + 1);
+        floodStartEndLocs.add(endLoc);
         Log.d("check", "ROUTING");
         route(floodStartEndLocs);
         //
@@ -444,9 +453,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //Implement code in here
         //line 380 code to be here
         //create a new method after porcessing flood
-        Route route =  routes.get(shortestPathIndex);
+        Route route = routes.get(shortestPathIndex);
         List<LatLng> points = route.getPoints();
-        for(int i = 0; i<points.size(); i++){
+        for (int i = 0; i < points.size(); i++) {
             LatLng point = points.get(i);
         }
         PolylineOptions rectOptions = new PolylineOptions()
