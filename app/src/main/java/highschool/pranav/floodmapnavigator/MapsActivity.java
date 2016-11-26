@@ -19,6 +19,16 @@ import android.os.Bundle;
 
 import android.util.Log;
 
+import com.android.volley.Cache;
+import com.android.volley.Network;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.directions.route.AbstractRouting;
 import com.directions.route.Route;
 import com.directions.route.RouteException;
@@ -52,6 +62,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -76,6 +87,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     final double floodLat = 35.56360612905;
     final double floodLong = -112.710044076;//-106.44003240;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
+    private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
 
     private ArrayList<Flood> worldFlood;
 
@@ -393,29 +405,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
 
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
-        // LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
-        LatLng userLoc = userFloodLocation;
-        ArrayList<LatLng> floodStartEndLocs = new ArrayList();
-        floodStartEndLocs.add(userLoc);
 
         if (userFlood != null) {
-
+            //if user flood is null then the user is not insude of a flood right now
+            //TODO:tell the user something if they are not inside of a flood like safe place
+            url = url+"location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=1000&key=" + PLACES_KEY;
+            mRequestQueue.add(mapPlacesRequest);
         }
+
         //By default added end location
         //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
-        //so we will have to create an array of points within the flood, annd put the call in a for-loop,
-        // if-statement combo that will iterate through the array and get each value and pass it to the API, then check based on our parameters we have with the if-statement]
+        //so we will have to create an array of points within the flood, and put the call in a for-loop,
+        //if-statement combo that will iterate through the array and get each value and pass it to the API, then check based on our parameters we have with the if-statement]
         //Based on the previous steps,
         //we can add all the eligible points to and array and plot these, then use one of the available algorithms{breath first search, depth first search, etc.]
-        LatLng endLoc = new LatLng(userLoc.latitude + 1, userLoc.longitude + 1);
-        floodStartEndLocs.add(endLoc);
-        Log.d("check", "ROUTING");
-        route(floodStartEndLocs);
-        //
+        //https://maps.googleapis.com/maps/api/elevation/json?locations=35.56360612905,-112.710044076&key=AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28 -> Current Elevation for flood data
+        //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=35.56360612905,-112.710044076&radius=150000&types=food&name=cruise&key=AIzaSyCOtzm-A5wVw1ixYKs0uWSd94NITbJ-93c
     }
 
     //route calculation
@@ -469,5 +474,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRoutingCancelled() {
 
     }
+
+    //This is going to be the Places API JSON request.
+    final String PLACES_KEY = "AIzaSyCtTnoQcPus_wUuQyBV7dhMqSfV8DKzNKQ";
+    String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
+
+    // Instantiate the cache
+    Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024); // 1MB cap
+
+    // Set up the network to use HttpURLConnection as the HTTP client.
+    Network network = new BasicNetwork(new HurlStack());
+
+    // Instantiate the RequestQueue with the cache and network.
+    RequestQueue mRequestQueue = new RequestQueue(cache, network);
+    Context con = this;
+
+    JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
+            (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                @Override
+                public void onResponse(JSONObject response) {
+                    try {
+                        JSONArray placeJSON = response.getJSONArray("results");
+                        JSONObject place = (JSONObject) placeJSON.get(0);
+                        JSONObject geometry = place.getJSONObject("geometry");
+                        JSONObject location = geometry.getJSONObject("location");
+                        double lat = location.getDouble("lat");
+                        double lng = location.getDouble("lng");
+                        // currently no using actual user location for testing
+                        if (ActivityCompat.checkSelfPermission(con, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            return;
+                        }
+                        Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
+                        // LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
+                        LatLng userLoc = userFloodLocation;
+
+                        ArrayList<LatLng> floodStartEndLocs = new ArrayList();
+                        floodStartEndLocs.add(userLoc);
+                        LatLng endLoc = new LatLng(lat, lng);
+                        floodStartEndLocs.add(endLoc);
+                        Log.d("check", "ROUTING");
+                        route(floodStartEndLocs);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener() {
+
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    // TODO Auto-generated method stub
+
+                }
+
+            });
+
 }
 
