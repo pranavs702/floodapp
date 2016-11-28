@@ -110,7 +110,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
                         Flood flood = setFloodDataValues(s);
                         floodArray.add(flood);
                         latLngArrayList = flood.getMaxMinValues(flood.getPoints(),flood.getBoundBoxMin().getLatitude(),flood.getBoundBoxMax().getLatitude(),flood.getBoundBoxMin().getLongitude(),flood.getBoundBoxMax().getLongitude());
-                        Log.v("tag", "reading flood data " + flood.getCountry());//This is for sample to see if parsing works
+                        //Log.v("tag", "reading flood data " + flood.getCountry());//This is for sample to see if parsing works
                         flood.setLatLngArrayList(latLngArrayList);//Set the LatLng Bondaries for tiles in Flood Object, This will be used for setting markers later
                     }
                 }

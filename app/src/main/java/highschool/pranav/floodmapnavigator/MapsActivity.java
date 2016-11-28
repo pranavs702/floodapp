@@ -83,9 +83,12 @@ import org.json.JSONObject;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
-
-    final double floodLat = 35.56360612905;
-    final double floodLong = -112.710044076;//-106.44003240;
+    /**
+     * 47.34, -124.92
+     * 33.57, -80.10000000000001
+     */
+    final double floodLat = 29.43;
+    final double floodLong = -107.64;//-106.44003240;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
     private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
 
@@ -105,6 +108,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Instantiate the cache
+        cache = new DiskBasedCache(getApplicationContext().getCacheDir(), 1024 * 1024); // 1MB cap
+
+        // Set up the network to use HttpURLConnection as the HTTP client.
+        network = new BasicNetwork(new HurlStack());
+
+        // Instantiate the RequestQueue with the cache and network.
+        mRequestQueue = new RequestQueue(cache, network);
+
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -129,6 +141,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onStart();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
+        mRequestQueue.start();
         client.connect();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -383,8 +396,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
                 // Log.v("MY POINTERS " + );
-                Log.v("tag", "MY POINTER Lat" + latLng.latitude);
-                Log.v("tag", "MY POINTER Lat" + latLng.longitude);
+                //Log.v("tag", "MY POINTER Lat " + latLng.latitude);
+                //Log.v("tag", "MY POINTER Lng " + latLng.longitude);
                 mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
             }
 
@@ -405,12 +418,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
 
         }
+//        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(0).latitude);
+//        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(0).longitude);
+//        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(1).latitude);
+//        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(1).longitude);
+//        Log.v("tag", "User Flood Size: " + userFlood.latLngArrayList.size());
 
-        if (userFlood != null) {
-            //if user flood is null then the user is not insude of a flood right now
+       if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
+            //if user flood is null then the user is not inside of a flood right now
             //TODO:tell the user something if they are not inside of a flood like safe place
-            url = url+"location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=1000&key=" + PLACES_KEY;
-            mRequestQueue.add(mapPlacesRequest);
+            url = url + "location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=50000&key=" + PLACES_KEY;
+           Log.v("URL", "URL FORMED: " + url);
+           mRequestQueue.add(mapPlacesRequest);
         }
 
         //By default added end location
@@ -476,33 +495,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     //This is going to be the Places API JSON request.
-    final String PLACES_KEY = "AIzaSyCtTnoQcPus_wUuQyBV7dhMqSfV8DKzNKQ";
+    final String PLACES_KEY = "AIzaSyD-y_wzRSKlVnygBaqogacfFjS8V7y5cog";
     String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
-
+    String rBody = null;
     // Instantiate the cache
-    Cache cache = new DiskBasedCache(getCacheDir(), 1024 * 1024); // 1MB cap
+    Cache cache; // 1MB cap
 
     // Set up the network to use HttpURLConnection as the HTTP client.
-    Network network = new BasicNetwork(new HurlStack());
+    Network network;
 
     // Instantiate the RequestQueue with the cache and network.
-    RequestQueue mRequestQueue = new RequestQueue(cache, network);
+    RequestQueue mRequestQueue;
     Context con = this;
+    JSONObject jsonReqObject = null;
+    //This is not getting executed ????
+
 
     JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
-            (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
-
+            (Request.Method.GET, url,jsonReqObject,new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
+                        Log.v("URL", "URL PASSED: " + url);
                         JSONArray placeJSON = response.getJSONArray("results");
+                        Log.v("tag", "JSON Results " + response.toString());
                         JSONObject place = (JSONObject) placeJSON.get(0);
                         JSONObject geometry = place.getJSONObject("geometry");
                         JSONObject location = geometry.getJSONObject("location");
                         double lat = location.getDouble("lat");
                         double lng = location.getDouble("lng");
                         // currently no using actual user location for testing
-                        if (ActivityCompat.checkSelfPermission(con, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        if (ActivityCompat.checkSelfPermission(con, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(con, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                                        PackageManager.PERMISSION_GRANTED) {
                             return;
                         }
                         Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
@@ -513,7 +538,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         floodStartEndLocs.add(userLoc);
                         LatLng endLoc = new LatLng(lat, lng);
                         floodStartEndLocs.add(endLoc);
-                        Log.d("check", "ROUTING");
+                        Log.d("check", "ROUTING STARTED");
+                        Log.v("tag", "ROUTING Lat Values " + lat);
+                        Log.v("tag", "ROUTING Lng Values " + lng);
                         route(floodStartEndLocs);
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -524,6 +551,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     // TODO Auto-generated method stub
+                    Log.v("tag", "Error Message ROUTING" + error.getMessage());
+                    Log.v("tag", "Error String " + error.toString());
 
                 }
 
