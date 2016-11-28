@@ -495,7 +495,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     //This is going to be the Places API JSON request.
-    final String PLACES_KEY = "AIzaSyD-y_wzRSKlVnygBaqogacfFjS8V7y5cog";
+    final String PLACES_KEY = "AIzaSyCvH_MAUyZw54O2JeSBdlR0JCPLXXAf9VU";//"AIzaSyD-y_wzRSKlVnygBaqogacfFjS8V7y5cog";
     String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
     String rBody = null;
     // Instantiate the cache
