@@ -2,8 +2,10 @@ package highschool.pranav.floodmapnavigator;
 
 import android.*;
 import android.Manifest;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -17,6 +19,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import android.text.Html;
 import android.util.Log;
 
 import com.android.volley.Cache;
@@ -38,10 +41,15 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocomplete;
+import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -83,14 +91,16 @@ import org.json.JSONObject;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
+        private static final int REQUEST_PLACE_PICKER = 1;
     /**
      * 47.34, -124.92
      * 33.57, -80.10000000000001
      */
-    final double floodLat = 29.43;
-    final double floodLong = -107.64;//-106.44003240;
+    final double floodLat =32.0085;   //29.43
+    final double floodLong = -114.601;   ;//-107.64;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
-    private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
+    //private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
+    //private final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";
 
     private ArrayList<Flood> worldFlood;
 
@@ -185,6 +195,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onConnectionSuspended(int i) {
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode,
+                                    int resultCode, Intent data) {
+
+        if (requestCode == REQUEST_PLACE_PICKER
+                && resultCode == Activity.RESULT_OK) {
+
+            // The user has selected a place. Extract the name and address.
+            final Place place = PlacePicker.getPlace(data, this);
+
+            final CharSequence name = place.getName();
+            final CharSequence address = place.getAddress();
+//            String attributions = PlacePicker.getAttributions();
+//            if (attributions == null) {
+//                attributions = "";
+//            }
+
+
+
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
 
@@ -333,6 +367,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         this.worldFlood = floods;
         int i;
         Flood userFlood = null;
+        //Log.i("Flood size" , "" + worldFlood.size());
         for (i = 0; i < worldFlood.size(); i++) {
             Flood floodIterate = worldFlood.get(i);
 
@@ -395,9 +430,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-                // Log.v("MY POINTERS " + );
-                //Log.v("tag", "MY POINTER Lat " + latLng.latitude);
-                //Log.v("tag", "MY POINTER Lng " + latLng.longitude);
+               // Log.i("MY POINTERS " );
+               Log.i("tag", "MY POINTER Lat " + latLng.latitude);
+               Log.i("tag", "MY POINTER Lng " + latLng.longitude);
                 mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
             }
 
@@ -424,13 +459,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(1).longitude);
 //        Log.v("tag", "User Flood Size: " + userFlood.latLngArrayList.size());
 
-       if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
+      // if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
             //if user flood is null then the user is not inside of a flood right now
             //TODO:tell the user something if they are not inside of a flood like safe place
-            url = url + "location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=50000&key=" + PLACES_KEY;
-           Log.v("URL", "URL FORMED: " + url);
-           mRequestQueue.add(mapPlacesRequest);
-        }
+//            url = url + "location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=50000&key=" + PLACES_KEY;
+//           Log.i("URL", "URL FORMED: " + url);
+//           mRequestQueue.add(mapPlacesRequest);//places webservices call is commented as this is throwing permission denied issue
+           //This widgets code is commented as it does not work as expected
+//           try {
+//               PlacePicker.IntentBuilder intentBuilder =
+//                       new PlacePicker.IntentBuilder();
+//               Intent intent = intentBuilder.build(this);
+//               // Start the intent by requesting a result,
+//               // identified by a request code.
+//               startActivityForResult(intent, REQUEST_PLACE_PICKER);
+//
+//           } catch (GooglePlayServicesRepairableException e) {
+//               // ...
+//           } catch (GooglePlayServicesNotAvailableException e) {
+//               // ...
+//           }
+       // }
 
         //By default added end location
         //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
@@ -495,7 +544,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     //This is going to be the Places API JSON request.
-    final String PLACES_KEY = "AIzaSyCvH_MAUyZw54O2JeSBdlR0JCPLXXAf9VU";//"AIzaSyD-y_wzRSKlVnygBaqogacfFjS8V7y5cog";
+    final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";//"AIzaSyCvH_MAUyZw54O2JeSBdlR0JCPLXXAf9VU";//"AIzaSyD-y_wzRSKlVnygBaqogacfFjS8V7y5cog";
     String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
     String rBody = null;
     // Instantiate the cache
@@ -511,14 +560,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //This is not getting executed ????
 
 
-    JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
+     JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
             (Request.Method.GET, url,jsonReqObject,new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
-                        Log.v("URL", "URL PASSED: " + url);
+                        Log.i("URL", "URL PASSED: " + url);
                         JSONArray placeJSON = response.getJSONArray("results");
-                        Log.v("tag", "JSON Results " + response.toString());
+                        Log.i("tag", "JSON Results " + response.toString());
                         JSONObject place = (JSONObject) placeJSON.get(0);
                         JSONObject geometry = place.getJSONObject("geometry");
                         JSONObject location = geometry.getJSONObject("location");
@@ -539,8 +588,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         LatLng endLoc = new LatLng(lat, lng);
                         floodStartEndLocs.add(endLoc);
                         Log.d("check", "ROUTING STARTED");
-                        Log.v("tag", "ROUTING Lat Values " + lat);
-                        Log.v("tag", "ROUTING Lng Values " + lng);
+                        Log.i("tag", "ROUTING Lat Values " + lat);
+                        Log.i("tag", "ROUTING Lng Values " + lng);
                         route(floodStartEndLocs);
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -551,8 +600,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     // TODO Auto-generated method stub
-                    Log.v("tag", "Error Message ROUTING" + error.getMessage());
-                    Log.v("tag", "Error String " + error.toString());
+                    Log.i("tag", "Error Message ROUTING" + error.getMessage());
+                    Log.i("tag", "Error String " + error.toString());
 
                 }
 

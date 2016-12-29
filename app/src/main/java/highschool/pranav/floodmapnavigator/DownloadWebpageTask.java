@@ -151,6 +151,8 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
             if (floodAttributes.contains("\\")) {
                 floodAttributes = stripCharacter(floodAttributes);
             }
+
+
             if (i == 1)
                 floodMap.put("AreasDataId", floodAttributes);
             if (i == 2)
@@ -198,6 +200,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
         locationArray = getListOfPointers(floodMap);
         Flood flood = new Flood(locationArray, floodMap.get("Country")
                 .toString(), boundBoxMin, boundBoxMax, alertLevel);
+        //Log.i("Max Lat", "Max Lat: " + boundingBoxLatMax);
         return flood;
     }
 
