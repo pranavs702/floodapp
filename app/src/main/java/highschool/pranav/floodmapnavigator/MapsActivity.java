@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -19,8 +20,13 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import android.support.v7.widget.LinearLayoutCompat;
 import android.text.Html;
 import android.util.Log;
+import android.view.Gravity;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Cache;
 import com.android.volley.Network;
@@ -37,6 +43,7 @@ import com.directions.route.Route;
 import com.directions.route.RouteException;
 import com.directions.route.Routing;
 import com.directions.route.RoutingListener;
+import com.directions.route.Segment;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
@@ -88,6 +95,7 @@ import java.util.StringTokenizer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
@@ -96,8 +104,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * 47.34, -124.92
      * 33.57, -80.10000000000001
      */
-    final double floodLat =32.0085;   //29.43
-    final double floodLong = -114.601;   ;//-107.64;
+    final double floodLat = 33.4996935;//32.0085;   //29.43
+    final double floodLong = -114.671304;//-114.601;   ;//-107.64;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
     //private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
     //private final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";
@@ -431,8 +439,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
                // Log.i("MY POINTERS " );
-               Log.i("tag", "MY POINTER Lat " + latLng.latitude);
-               Log.i("tag", "MY POINTER Lng " + latLng.longitude);
+               //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
+               //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
                 mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
             }
 
@@ -452,6 +460,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //line # 354
             // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
 
+        }
+
+        if(userFlood!=null) {
+            // TODO: call route method to toute to prefered location after implementing location-finding algorithm
+            LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList());
+            ArrayList<LatLng> startEndRouting = new ArrayList<LatLng>();
+            startEndRouting.add(userFloodLocation);
+            startEndRouting.add(destination);
+            route(startEndRouting);
         }
 //        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(0).latitude);
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(0).longitude);
@@ -491,6 +508,67 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=35.56360612905,-112.710044076&radius=150000&types=food&name=cruise&key=AIzaSyCOtzm-A5wVw1ixYKs0uWSd94NITbJ-93c
     }
 
+    private LatLng findNearestPoint(LatLng test, List<LatLng> target) {
+        double distance = -1;
+        LatLng minimumDistancePoint = test;
+
+        if (test == null || target == null) {
+            return minimumDistancePoint;
+        }
+
+        for (int i = 0; i < target.size(); i++) {
+            LatLng point = target.get(i);
+
+            int segmentPoint = i + 1;
+            if (segmentPoint >= target.size()) {
+                segmentPoint = 0;
+            }
+
+            double currentDistance = PolyUtil.distanceToLine(test, point, target.get(segmentPoint));
+            if (distance == -1 || currentDistance < distance) {
+                distance = currentDistance;
+                minimumDistancePoint = findNearestPoint(test, point, target.get(segmentPoint));
+            }
+        }
+
+
+
+        return minimumDistancePoint;
+    }
+
+    /**
+     * Based on `distanceToLine` method from
+     * https://github.com/googlemaps/android-maps-utils/blob/master/library/src/com/google/maps/android/PolyUtil.java
+     */
+    private LatLng findNearestPoint(final LatLng p, final LatLng start, final LatLng end) {
+        if (start.equals(end)) {
+            return start;
+        }
+
+        final double s0lat = Math.toRadians(p.latitude);
+        final double s0lng = Math.toRadians(p.longitude);
+        final double s1lat = Math.toRadians(start.latitude);
+        final double s1lng = Math.toRadians(start.longitude);
+        final double s2lat = Math.toRadians(end.latitude);
+        final double s2lng = Math.toRadians(end.longitude);
+
+        double s2s1lat = s2lat - s1lat;
+        double s2s1lng = s2lng - s1lng;
+        final double u = ((s0lat - s1lat) * s2s1lat + (s0lng - s1lng) * s2s1lng)
+                / (s2s1lat * s2s1lat + s2s1lng * s2s1lng);
+        if (u <= 0) {
+            return start;
+        }
+        if (u >= 1) {
+            return end;
+        }
+
+        return new LatLng(start.latitude + (u * (end.latitude - start.latitude)),
+                start.longitude + (u * (end.longitude - start.longitude)));
+
+
+    }
+
     //route calculation
     //Need to get latLngStart and latLngEnd
     public void route(ArrayList<LatLng> startEndLocs) {
@@ -522,7 +600,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onRoutingSuccess(ArrayList<Route> routes, int shortestPathIndex) {
         Log.d("check", "ROUTING SUCESS");
-        progressDialog.hide();
         //Implement code in here
         //line 380 code to be here
         //create a new method after porcessing flood
@@ -533,8 +610,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         PolylineOptions rectOptions = new PolylineOptions()
                 .addAll(points);
+
         rectOptions.color(Color.BLACK).width(5);
         mMap.addPolyline(rectOptions);
+        List<Segment> segmentForRouting= route.getSegments();
+        for(int i = 0; i<100; i++) {
+            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
+        }
+
+        TextView textView = new TextView(getApplicationContext());
+        String instructionsConcat = "";
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.textView);
+        for(Segment segment: segmentForRouting){
+            String instruction = segment.getInstruction();
+            instructionsConcat += "\n" + instruction;
+        }
+        textView.setText(instructionsConcat);
+        textView.setTextColor(Color.BLACK);
+        textView.setTextSize(15);
+        textView.setTypeface(Typeface.DEFAULT_BOLD);
+        textView.setBackgroundColor(Color.TRANSPARENT);
+        //textView.setGravity(Gravity.BOTTOM);
+        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)  );
+        linearLayout.setBackgroundColor(Color.TRANSPARENT);
+        linearLayout.addView(textView);
+        progressDialog.hide();
+        progressDialog.dismiss();
         Log.d("check", "ROUTING SUCESS TWO");
     }
 
