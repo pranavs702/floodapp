@@ -1,5 +1,6 @@
-# floodapp
-This Appliacation is a Flood Guidnace App
+# Flood Escape Guidance App
+This Android App is for guiding to an alternative location in case of floods
+
 #Motivation
 * Floods are one of the leading cause of death and property loss around the world
 * The number of extreme rain incidents has increased in the last decade due to global warming
