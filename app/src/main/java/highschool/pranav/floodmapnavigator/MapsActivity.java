@@ -107,6 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     final double floodLat = 36.723056;//32.0085;   //29.43
     final double floodLong = -106.15 ;//-114.601;   ;//-107.64;
+
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
     //private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
     //private final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";
