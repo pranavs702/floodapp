@@ -84,6 +84,7 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -99,13 +100,13 @@ import org.w3c.dom.Text;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         LocationListener, GoogleApiClient.OnConnectionFailedListener, DownloadWebpageTask.FloodAssyncResponse, RoutingListener {
-        private static final int REQUEST_PLACE_PICKER = 1;
+    private static final int REQUEST_PLACE_PICKER = 1;
     /**
      * 47.34, -124.92
      * 33.57, -80.10000000000001
      */
-    final double floodLat = 33.4996935;//32.0085;   //29.43
-    final double floodLong = -114.671304;//-114.601;   ;//-107.64;
+    final double floodLat = 36.723056;//32.0085;   //29.43
+    final double floodLong = -106.15 ;//-114.601;   ;//-107.64;
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
     //private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
     //private final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";
@@ -415,11 +416,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
              * This is done with Polygon
              */
             ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
+            //5points.sort();
 //          Collections.reverse(points);
-
+            //Collections.reverseOrder();//sort(points);
+            //points.sort(points, new Comparator<LatLng>);
             PolygonOptions rectOptions = new PolygonOptions()
                     .addAll(points).fillColor(6987504);
-            rectOptions.strokeColor(Color.CYAN).strokeWidth(5);
+            rectOptions.strokeColor(Color.BLUE).strokeWidth(5);
 
             Polygon polygon = mMap.addPolygon(rectOptions);
             boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
@@ -438,9 +441,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
                 BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-               // Log.i("MY POINTERS " );
-               //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
-               //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
+                // Log.i("MY POINTERS " );
+                //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
+                //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
                 mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
             }
 
@@ -476,13 +479,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(1).longitude);
 //        Log.v("tag", "User Flood Size: " + userFlood.latLngArrayList.size());
 
-      // if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
-            //if user flood is null then the user is not inside of a flood right now
-            //TODO:tell the user something if they are not inside of a flood like safe place
+        // if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
+        //if user flood is null then the user is not inside of a flood right now
+        //TODO:tell the user something if they are not inside of a flood like safe place
 //            url = url + "location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=50000&key=" + PLACES_KEY;
 //           Log.i("URL", "URL FORMED: " + url);
 //           mRequestQueue.add(mapPlacesRequest);//places webservices call is commented as this is throwing permission denied issue
-           //This widgets code is commented as it does not work as expected
+        //This widgets code is commented as it does not work as expected
 //           try {
 //               PlacePicker.IntentBuilder intentBuilder =
 //                       new PlacePicker.IntentBuilder();
@@ -496,7 +499,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //           } catch (GooglePlayServicesNotAvailableException e) {
 //               // ...
 //           }
-       // }
+        // }
 
         //By default added end location
         //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
@@ -621,18 +624,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         TextView textView = new TextView(getApplicationContext());
         String instructionsConcat = "";
         LinearLayout linearLayout = (LinearLayout) findViewById(R.id.textView);
-        for(Segment segment: segmentForRouting){
-            String instruction = segment.getInstruction();
-            instructionsConcat += "\n" + instruction;
-        }
+        int i = 0;
+
+            for (Segment segment : segmentForRouting) {
+                String instruction = segment.getInstruction();
+                instructionsConcat += "\n" + instruction;
+            }
+
+        progressDialog.hide();
+        progressDialog.dismiss();
+
         textView.setText(instructionsConcat);
         textView.setTextColor(Color.BLACK);
-        textView.setTextSize(15);
-        textView.setTypeface(Typeface.DEFAULT_BOLD);
-        textView.setBackgroundColor(Color.TRANSPARENT);
-        //textView.setGravity(Gravity.BOTTOM);
-        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)  );
-        linearLayout.setBackgroundColor(Color.TRANSPARENT);
+//        textView.setTextSize(15);
+//        textView.setTypeface(Typeface.DEFAULT_BOLD);
+//        textView.setBackgroundColor(Color.TRANSPARENT);
+//        textView.setGravity(Gravity.BOTTOM);
+//        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)  );
+//        linearLayout.setBackgroundColor(Color.TRANSPARENT);
         linearLayout.addView(textView);
         progressDialog.hide();
         progressDialog.dismiss();
@@ -661,7 +670,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //This is not getting executed ????
 
 
-     JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
+    JsonObjectRequest mapPlacesRequest = new JsonObjectRequest
             (Request.Method.GET, url,jsonReqObject,new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
@@ -709,4 +718,3 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             });
 
 }
-

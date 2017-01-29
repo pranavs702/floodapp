@@ -19,6 +19,7 @@
         tools:context="highschool.pranav.floodmapnavigator.MapsActivity"
         tools:layout="@layout/cast_help_text"
         android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/textView" />
+        android:layout_toEndOf="@+id/textView"
+        android:layout_alignParentBottom="true"/>
 
 </RelativeLayout>
