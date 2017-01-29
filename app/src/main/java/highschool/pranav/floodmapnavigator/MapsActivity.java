@@ -122,6 +122,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
+     *
      */
     private GoogleApiClient client;
 
