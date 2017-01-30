@@ -107,8 +107,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     final double floodLat = 36.723056;//32.0085;   //29.43
     final double floodLong = -106.15 ;//-114.601;   ;//-107.64;
+    int colorInt = 0;
 
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
+    private TextView textView;
+    private LatLng destination2;
     //private String googleElevationAPIKey = "AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28";
     //private final String PLACES_KEY = "AIzaSyBLg7RA0bv8Ep2Bya-fMr9Hdii8uQ2S2Hc";
 
@@ -154,7 +157,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .addOnConnectionFailedListener(this)
                 .addApi(AppIndex.API).build();
 
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.textView);
+        textView = new TextView(getApplicationContext());
 
+        textView.setTextColor(Color.BLACK);
+//        textView.setTextSize(15);
+//        textView.setTypeface(Typeface.DEFAULT_BOLD);
+//        textView.setBackgroundColor(Color.TRANSPARENT);
+//        textView.setGravity(Gravity.BOTTOM);
+//        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)  );
+//        linearLayout.setBackgroundColor(Color.TRANSPARENT);
+        linearLayout.addView(textView);
     }
 
     @Override
@@ -468,12 +481,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         if(userFlood!=null) {
-            // TODO: call route method to toute to prefered location after implementing location-finding algorithm
-            LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList());
+            // TODO: call route method to route to prefered location after implementing location-finding algorithm
+            LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), false);
             ArrayList<LatLng> startEndRouting = new ArrayList<LatLng>();
             startEndRouting.add(userFloodLocation);
             startEndRouting.add(destination);
             route(startEndRouting);
+            mMap.addMarker(new MarkerOptions().position(destination).title("DESTINATION"));
+
+            destination2 = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), true);
+            mMap.addMarker(new MarkerOptions().position(destination2).title("ALTERNATIVE DESTINATION"));
+//            userFlood.getLatLngArrayList().remove(userFlood.getLatLngArrayList().indexOf(destination));
+//            destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList());
+//            startEndRouting.add(userFloodLocation);
+//            startEndRouting.add(destination);
+//            route(startEndRouting);
         }
 //        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(0).latitude);
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(0).longitude);
@@ -513,9 +535,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=35.56360612905,-112.710044076&radius=150000&types=food&name=cruise&key=AIzaSyCOtzm-A5wVw1ixYKs0uWSd94NITbJ-93c
     }
 
-    private LatLng findNearestPoint(LatLng test, List<LatLng> target) {
+    private LatLng findNearestPoint(LatLng test, List<LatLng> target, boolean secondClosest) {
         double distance = -1;
+        double distance2 = -1;
         LatLng minimumDistancePoint = test;
+        LatLng minimumDistancePoint2 = test;
 
         if (test == null || target == null) {
             return minimumDistancePoint;
@@ -530,15 +554,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             double currentDistance = PolyUtil.distanceToLine(test, point, target.get(segmentPoint));
+
             if (distance == -1 || currentDistance < distance) {
+                distance2 = distance;
+                minimumDistancePoint2 = minimumDistancePoint;
                 distance = currentDistance;
                 minimumDistancePoint = findNearestPoint(test, point, target.get(segmentPoint));
             }
         }
-
-
-
-        return minimumDistancePoint;
+        return secondClosest ? minimumDistancePoint2 : minimumDistancePoint;
     }
 
     /**
@@ -578,8 +602,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //Need to get latLngStart and latLngEnd
     public void route(ArrayList<LatLng> startEndLocs) {
 
-        progressDialog = ProgressDialog.show(this, "Please wait.",
-                "Fetching route information.", true);
+        //progressDialog = ProgressDialog.show(this, "Please wait.",
+               // "Fetching route information.", true);
         Routing routing = new Routing.Builder()
                 .travelMode(Routing.TravelMode.WALKING)
                 .withListener(this)
@@ -593,8 +617,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onRoutingFailure(RouteException e) {
         Log.d("check", "ROUTING FALIURE");
-        progressDialog.hide();
-        progressDialog = ProgressDialog.show(this, "FAILED TO ROUTE", e.getLocalizedMessage(), false, true);
+        //progressDialog.hide();
+        //progressDialog = ProgressDialog.show(this, "FAILED TO ROUTE", e.getLocalizedMessage(), false, true);
     }
 
     @Override
@@ -610,43 +634,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //create a new method after porcessing flood
         Route route = routes.get(shortestPathIndex);
         List<LatLng> points = route.getPoints();
+        List<Segment> segmentForRouting= route.getSegments();
         for (int i = 0; i < points.size(); i++) {
             LatLng point = points.get(i);
         }
         PolylineOptions rectOptions = new PolylineOptions()
                 .addAll(points);
+        String instructionsConcat = "";
 
-        rectOptions.color(Color.BLACK).width(5);
-        mMap.addPolyline(rectOptions);
-        List<Segment> segmentForRouting= route.getSegments();
-        for(int i = 0; i<100; i++) {
-            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
+        if(colorInt==0) {
+            instructionsConcat ="Short Black Route:\n";
+            rectOptions.color(Color.BLACK).width(5);
+            ArrayList<LatLng> startEndRouting2 = new ArrayList<LatLng>();
+            startEndRouting2.add(userFloodLocation);
+            startEndRouting2.add(destination2);
+            route(startEndRouting2);
+            Log.v("1", "1");
+        }
+        else {
+            instructionsConcat ="\n\nLong Red Route:\n";
+            rectOptions.color(Color.RED).width(5);
+            Log.v("2", "2");
         }
 
-        TextView textView = new TextView(getApplicationContext());
-        String instructionsConcat = "";
-        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.textView);
+        if(colorInt==0) {
+            colorInt = 1;
+        }
+
+        mMap.addPolyline(rectOptions);
+//        for(int i = 0; i<100; i++) {
+//            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
+//        }
+
         int i = 0;
 
-            for (Segment segment : segmentForRouting) {
-                String instruction = segment.getInstruction();
-                instructionsConcat += "\n" + instruction;
-            }
+        for (Segment segment : segmentForRouting) {
+            String instruction = segment.getInstruction();
+            instructionsConcat += "\n" + instruction;
+            Log.v("INSTRUCTION", instruction);
+        }
 
-        progressDialog.hide();
-        progressDialog.dismiss();
+        //progressDialog.hide();
+        //progressDialog.dismiss();
 
-        textView.setText(instructionsConcat);
-        textView.setTextColor(Color.BLACK);
-//        textView.setTextSize(15);
-//        textView.setTypeface(Typeface.DEFAULT_BOLD);
-//        textView.setBackgroundColor(Color.TRANSPARENT);
-//        textView.setGravity(Gravity.BOTTOM);
-//        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)  );
-//        linearLayout.setBackgroundColor(Color.TRANSPARENT);
-        linearLayout.addView(textView);
-        progressDialog.hide();
-        progressDialog.dismiss();
+        textView.append(instructionsConcat);
+        //progressDialog.hide();
+        //progressDialog.dismiss();
         Log.d("check", "ROUTING SUCESS TWO");
     }
 
