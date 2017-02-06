@@ -105,8 +105,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * 47.34, -124.92
      * 33.57, -80.10000000000001
      */
-    final double floodLat = 36.723056;//32.0085;   //29.43
-    final double floodLong = -106.15 ;//-114.601;   ;//-107.64;
+    final double floodLat = 32.974722;//32.0085;   //29.43
+    final double floodLong = -96.321667 ;//-114.601;   ;//-107.64;
     int colorInt = 0;
 
     private LatLng userFloodLocation = new LatLng(floodLat, floodLong);
@@ -161,6 +161,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         textView = new TextView(getApplicationContext());
 
         textView.setTextColor(Color.BLACK);
+        textView.setTextSize(18);
 //        textView.setTextSize(15);
 //        textView.setTypeface(Typeface.DEFAULT_BOLD);
 //        textView.setBackgroundColor(Color.TRANSPARENT);
@@ -204,8 +205,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location loc = LocationServices.FusedLocationApi.getLastLocation(client);
 
             if (loc != null) {
-                //LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
-                LatLng userLoc = userFloodLocation;
+                LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
+                //LatLng userLoc = userFlood;
                 mMap.addMarker(new MarkerOptions().position(userLoc).title("YOU ARE HERE"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
                 //mMap.animateCamera(CameraUpdateFactory.zoomTo(1090));
@@ -262,7 +263,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setMapType(3);
-        mMap.setMyLocationEnabled(true);
+//        mMap.setMyLocationEnabled(true);
         //New code added for permission issue
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
         mMap.setTrafficEnabled(true);
@@ -276,11 +277,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (loc != null) {
                 //LatLng userLoc = new LatLng(loc.getLatitude(), loc.getLongitude());
                 LatLng userLoc = userFloodLocation;
-                mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION"));
+                BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET);
+                mMap.addMarker(new MarkerOptions().position(userLoc).title("YOUR LOCATION").icon(icon));
                 mMap.addCircle(new CircleOptions().visible(true).center(userLoc).radius(100).strokeColor(0x001234ff).strokeWidth(10));
 
                 mMap.addPolygon(new PolygonOptions().strokeColor(0x000000).strokeWidth(10));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
+
 
             }
         }
@@ -392,9 +395,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         int i;
         Flood userFlood = null;
         //Log.i("Flood size" , "" + worldFlood.size());
-        for (i = 0; i < worldFlood.size(); i++) {
-            Flood floodIterate = worldFlood.get(i);
-
+        //for (i = 0; i < worldFlood.size(); i++) {
+        int floodInd = 7;
+        if(worldFlood.size()>floodInd){
+            Flood floodIterate = worldFlood.get(floodInd);
+            userFlood = floodIterate;
             Location min = floodIterate.getBoundBoxMin();
             Location max = floodIterate.getBoundBoxMax();
 
@@ -416,7 +421,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
                     break;
                 default:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
             }
             mMap.addMarker(new MarkerOptions()
                     .position(minLoc)
@@ -440,12 +445,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             rectOptions.strokeColor(Color.BLUE).strokeWidth(5);
 
             Polygon polygon = mMap.addPolygon(rectOptions);
-            boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
-            if (containsLoc) {
-                userFlood = floodIterate;
-            }
+//            boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
+//            if (containsLoc) {
+//                userFlood = floodIterate;
+//            }
 
 
+            Location max1 = userFlood.getBoundBoxMax();
+            Location min1 = userFlood.getBoundBoxMin();
+            double latAv = (min1.getLatitude() + max1.getLatitude())/2;
+            double longAv = (min1.getLongitude() + max1.getLongitude())/2;
+            userFloodLocation = new LatLng(latAv, longAv);
+            //LatLng userLoc = userFlood;
+            BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET);
+            mMap.addMarker(new MarkerOptions().position(userFloodLocation).title("YOU ARE HERE").icon(icon2));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(userFloodLocation));
+            //mMap.animateCamera(CameraUpdateFactory.zoomTo(1090));
+            //mMap.animateCamera(CameraUpdateFactory.newLatLng(userLoc));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userFloodLocation, 15));
             /**
              * To Do is to either plot Tiles with Points Data or draw a polygon/layout with max and min lat and long coordinates
              */
@@ -455,11 +472,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //Loop to iterate latLangArrayList for tiles mapping
             for (LatLng latLng : floodIterate.getLatLngArrayList()) {
                 //This is place holder for adding tiles as Polygon
-                BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
+                BitmapDescriptor icon3 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
                 // Log.i("MY POINTERS " );
                 //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
                 //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
-                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon2));
+                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon3));
             }
 
 
@@ -479,7 +496,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
 
         }
-
         if(userFlood!=null) {
             // TODO: call route method to route to prefered location after implementing location-finding algorithm
             LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), false);
@@ -487,10 +503,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             startEndRouting.add(userFloodLocation);
             startEndRouting.add(destination);
             route(startEndRouting);
-            mMap.addMarker(new MarkerOptions().position(destination).title("DESTINATION"));
+            BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+            mMap.addMarker(new MarkerOptions().position(destination).title("DESTINATION").icon(icon));
 
+            BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
             destination2 = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), true);
-            mMap.addMarker(new MarkerOptions().position(destination2).title("ALTERNATIVE DESTINATION"));
+            mMap.addMarker(new MarkerOptions().position(destination2).title("ALTERNATIVE DESTINATION").icon(icon2));
 //            userFlood.getLatLngArrayList().remove(userFlood.getLatLngArrayList().indexOf(destination));
 //            destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList());
 //            startEndRouting.add(userFloodLocation);
@@ -616,19 +634,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingFailure(RouteException e) {
-        Log.d("check", "ROUTING FALIURE");
+        Log.w("check", "ROUTING FALIURE");
         //progressDialog.hide();
         //progressDialog = ProgressDialog.show(this, "FAILED TO ROUTE", e.getLocalizedMessage(), false, true);
     }
 
     @Override
     public void onRoutingStart() {
-        Log.d("check", "ROUTING START");
+        Log.w("check", "ROUTING START");
     }
 
     @Override
     public void onRoutingSuccess(ArrayList<Route> routes, int shortestPathIndex) {
-        Log.d("check", "ROUTING SUCESS");
+        Log.w("check", "ROUTING SUCESS");
         //Implement code in here
         //line 380 code to be here
         //create a new method after porcessing flood
@@ -641,46 +659,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         PolylineOptions rectOptions = new PolylineOptions()
                 .addAll(points);
         String instructionsConcat = "";
-
         if(colorInt==0) {
-            instructionsConcat ="Short Black Route:\n";
-            rectOptions.color(Color.BLACK).width(5);
+            instructionsConcat += "\n\nShort Green Route:\n";
+            rectOptions.color(Color.GREEN).width(5);
             ArrayList<LatLng> startEndRouting2 = new ArrayList<LatLng>();
             startEndRouting2.add(userFloodLocation);
             startEndRouting2.add(destination2);
             route(startEndRouting2);
-            Log.v("1", "1");
+            Log.w("1", "1");
         }
-        else {
-            instructionsConcat ="\n\nLong Red Route:\n";
+        else if(colorInt ==1) {
+            instructionsConcat += "\n\nLong Red Route:\n";
             rectOptions.color(Color.RED).width(5);
-            Log.v("2", "2");
+            Log.w("2", "2");
         }
+        instructionsConcat += "\nYour destination is: " + route.getEndAddressText() + " \nDistance: " + route.getDistanceText() + "\n Duration: " + route.getDurationText() + " by walking.\n";
 
-        if(colorInt==0) {
-            colorInt = 1;
-        }
-
-        mMap.addPolyline(rectOptions);
+        if(colorInt <2) {
+            mMap.addPolyline(rectOptions);
 //        for(int i = 0; i<100; i++) {
 //            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
 //        }
 
-        int i = 0;
+            int i = 0;
 
-        for (Segment segment : segmentForRouting) {
-            String instruction = segment.getInstruction();
-            instructionsConcat += "\n" + instruction;
-            Log.v("INSTRUCTION", instruction);
+            for (Segment segment : segmentForRouting) {
+                String instruction = segment.getInstruction();
+                instructionsConcat += "\n" + instruction;
+                Log.v("INSTRUCTION", instruction);
+            }
+
+            instructionsConcat+="\n\n";
+
+            //progressDialog.hide();
+            //progressDialog.dismiss();
+
+            textView.append(instructionsConcat);
+            //progressDialog.hide();
+            //progressDialog.dismiss();
+            Log.w("check", "ROUTING SUCESS TWO");
         }
-
-        //progressDialog.hide();
-        //progressDialog.dismiss();
-
-        textView.append(instructionsConcat);
-        //progressDialog.hide();
-        //progressDialog.dismiss();
-        Log.d("check", "ROUTING SUCESS TWO");
+        colorInt ++;
     }
 
     @Override
