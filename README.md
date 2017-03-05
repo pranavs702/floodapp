@@ -23,6 +23,7 @@ Computes the fastest route using google directions  and google elevation to guid
 
 #Links to follow up on:
 Intro: https://www.youtube.com/watch?v=ZB52NgCQonc
+
 Technical: https://www.youtube.com/watch?v=TEDo1-1Nu-E
 Final Video(UI Design): https://www.youtube.com/watch?v=D1pHloyP6cg
 
