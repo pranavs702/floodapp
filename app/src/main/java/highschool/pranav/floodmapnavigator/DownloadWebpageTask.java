@@ -108,7 +108,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
                     if (!s.contains("AreasDataId")) {
 
                         Flood flood = setFloodDataValues(s);
-                        if(flood.getCountry().equals("United States") || flood.getCountry().equals("UnitedStates")){
+                        if(flood.getCountry().equals("United States") || flood.getCountry().equals("UnitedStates") || flood.getCountry().equals("Australia") || flood.getCountry().equals("Australia")){
                             floodArray.add(flood);
                         }
 

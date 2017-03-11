@@ -161,7 +161,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         textView = new TextView(getApplicationContext());
 
         textView.setTextColor(Color.BLACK);
-        textView.setTextSize(18);
+        textView.setTextSize(14);
 //        textView.setTextSize(15);
 //        textView.setTypeface(Typeface.DEFAULT_BOLD);
 //        textView.setBackgroundColor(Color.TRANSPARENT);
@@ -396,8 +396,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Flood userFlood = null;
         //Log.i("Flood size" , "" + worldFlood.size());
         //for (i = 0; i < worldFlood.size(); i++) {
-        int floodInd = 7;
-        if(worldFlood.size()>floodInd){
+        int floodInd = 0;
+        for(i = 0; i<=2; i++){
+        if(worldFlood.size()>floodInd) {
             Flood floodIterate = worldFlood.get(floodInd);
             userFlood = floodIterate;
             Location min = floodIterate.getBoundBoxMin();
@@ -453,8 +454,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             Location max1 = userFlood.getBoundBoxMax();
             Location min1 = userFlood.getBoundBoxMin();
-            double latAv = (min1.getLatitude() + max1.getLatitude())/2;
-            double longAv = (min1.getLongitude() + max1.getLongitude())/2;
+            double latAv = (min1.getLatitude() + max1.getLatitude()) / 2;
+            double longAv = (min1.getLongitude() + max1.getLongitude()) / 2;
             userFloodLocation = new LatLng(latAv, longAv);
             //LatLng userLoc = userFlood;
             BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET);
@@ -494,7 +495,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //Call the method or logic to calculate the route and map
             //line # 354
             // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
-
+            floodInd = 1;
+            }
         }
         if(userFlood!=null) {
             // TODO: call route method to route to prefered location after implementing location-finding algorithm
@@ -680,6 +682,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        for(int i = 0; i<100; i++) {
 //            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
 //        }
+
+            //Toast toast = new Toast(getApplicationContext());
+            //toast.setGravity(Gravity.TOP|Gravity.START, 0, 0);
+
+            for(int j = 0; j<10; j++) {
+                Toast.makeText(getApplicationContext(), "ALERT! Your coordinates are within a flood zone. \n Please follow the given route to safety.", Toast.LENGTH_LONG).show();
+                //toast.makeText(getApplicationContext(), "These are your instructions", Toast.LENGTH_LONG).show();
+            }
 
             int i = 0;
 
