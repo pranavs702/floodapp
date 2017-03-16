@@ -161,7 +161,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         textView = new TextView(getApplicationContext());
 
         textView.setTextColor(Color.BLACK);
-        textView.setTextSize(14);
+        textView.setTextSize(18);
 //        textView.setTextSize(15);
 //        textView.setTypeface(Typeface.DEFAULT_BOLD);
 //        textView.setBackgroundColor(Color.TRANSPARENT);
@@ -300,6 +300,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+        /**
+         * This code uses onMapClickListener to place markers where the user taps,
+         * and the coordinates can be retreived using points.latitue and points.longitude
+         * TODO: Make this as current user location and incorporate single tap and double tap
+         * Single Tap Should Do:
+         * If it is not in flood location won't do anything, if it is in flood location it will place a marker
+         * that will become a user location and do the route from that
+         * Double Tap should Do: Will Alert about re-routing and take you to nearest flood location
+         * based on tapped point as current user location
+         */
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+
+            @Override
+            public void onMapClick(LatLng point) {
+
+                MarkerOptions marker = new MarkerOptions().position(
+                        new LatLng(point.latitude, point.longitude)).title("New Marker");
+
+                mMap.addMarker(marker);
+
+                Log.v("onMapClickListener", point.latitude+"---"+ point.longitude);
+            }
+        });
     }
 
     /**
@@ -396,140 +419,139 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Flood userFlood = null;
         //Log.i("Flood size" , "" + worldFlood.size());
         //for (i = 0; i < worldFlood.size(); i++) {
-        int floodInd = 0;
-        for(i = 0; i<=2; i++){
-        if(worldFlood.size()>floodInd) {
-            Flood floodIterate = worldFlood.get(floodInd);
-            userFlood = floodIterate;
-            Location min = floodIterate.getBoundBoxMin();
-            Location max = floodIterate.getBoundBoxMax();
+        int floodInd = 7;
+        for(int h = 0; h<2; h++) {
+            if (worldFlood.size() > floodInd) {
+                Flood floodIterate = worldFlood.get(floodInd);
+                userFlood = floodIterate;
+                Location min = floodIterate.getBoundBoxMin();
+                Location max = floodIterate.getBoundBoxMax();
 
-            int alertLevel = floodIterate.getAlertLevel();
+                int alertLevel = floodIterate.getAlertLevel();
 
-            LatLng minLoc = new LatLng(min.getLatitude(), min.getLongitude());
-            LatLng maxLoc = new LatLng(max.getLatitude(), max.getLongitude());
-            //if (userFloodLocation.latitude > minLoc.latitude && userFloodLocation.latitude < maxLoc.latitude)
-            BitmapDescriptor icon;
+                LatLng minLoc = new LatLng(min.getLatitude(), min.getLongitude());
+                LatLng maxLoc = new LatLng(max.getLatitude(), max.getLongitude());
+                //if (userFloodLocation.latitude > minLoc.latitude && userFloodLocation.latitude < maxLoc.latitude)
+                BitmapDescriptor icon;
 
-            switch (alertLevel) {
-                case 2:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-                    break;
-                case 3:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE);
-                    break;
-                case 4:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-                    break;
-                default:
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
-            }
-            mMap.addMarker(new MarkerOptions()
-                    .position(minLoc)
-                    .icon(icon)
-                    .title("MIN FLOOD" + alertLevel));
-            mMap.addMarker(new MarkerOptions()
-                    .position(maxLoc)
-                    .icon(icon)
-                    .title("MAX FLOOD" + alertLevel));
-            /**
-             * Plotting 4 points to highlight flood path based on max and min coordinates
-             * This is done with Polygon
-             */
-            ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
-            //5points.sort();
+                switch (alertLevel) {
+                    case 2:
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                        break;
+                    case 3:
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE);
+                        break;
+                    case 4:
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                        break;
+                    default:
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
+                }
+                mMap.addMarker(new MarkerOptions()
+                        .position(minLoc)
+                        .icon(icon)
+                        .title("MIN FLOOD" + alertLevel));
+                mMap.addMarker(new MarkerOptions()
+                        .position(maxLoc)
+                        .icon(icon)
+                        .title("MAX FLOOD" + alertLevel));
+                /**
+                 * Plotting 4 points to highlight flood path based on max and min coordinates
+                 * This is done with Polygon
+                 */
+                ArrayList<LatLng> points = floodIterate.getLatLngArrayList();
+                //5points.sort();
 //          Collections.reverse(points);
-            //Collections.reverseOrder();//sort(points);
-            //points.sort(points, new Comparator<LatLng>);
-            PolygonOptions rectOptions = new PolygonOptions()
-                    .addAll(points).fillColor(6987504);
-            rectOptions.strokeColor(Color.BLUE).strokeWidth(5);
+                //Collections.reverseOrder();//sort(points);
+                //points.sort(points, new Comparator<LatLng>);
+                PolygonOptions rectOptions = new PolygonOptions()
+                        .addAll(points).fillColor(6987504);
+                rectOptions.strokeColor(Color.BLUE).strokeWidth(5);
 
-            Polygon polygon = mMap.addPolygon(rectOptions);
+                Polygon polygon = mMap.addPolygon(rectOptions);
 //            boolean containsLoc = PolyUtil.containsLocation(userFloodLocation, points, true);
 //            if (containsLoc) {
 //                userFlood = floodIterate;
 //            }
 
 
-            Location max1 = userFlood.getBoundBoxMax();
-            Location min1 = userFlood.getBoundBoxMin();
-            double latAv = (min1.getLatitude() + max1.getLatitude()) / 2;
-            double longAv = (min1.getLongitude() + max1.getLongitude()) / 2;
-            userFloodLocation = new LatLng(latAv, longAv);
-            //LatLng userLoc = userFlood;
-            BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET);
-            mMap.addMarker(new MarkerOptions().position(userFloodLocation).title("YOU ARE HERE").icon(icon2));
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(userFloodLocation));
-            //mMap.animateCamera(CameraUpdateFactory.zoomTo(1090));
-            //mMap.animateCamera(CameraUpdateFactory.newLatLng(userLoc));
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userFloodLocation, 15));
-            /**
-             * To Do is to either plot Tiles with Points Data or draw a polygon/layout with max and min lat and long coordinates
-             */
-            /**
-             * Once the flood Data is mapped we need to suggest user to better elevation in MAP using the coordinates for alternate paths
-             */
-            //Loop to iterate latLangArrayList for tiles mapping
-            for (LatLng latLng : floodIterate.getLatLngArrayList()) {
-                //This is place holder for adding tiles as Polygon
-                BitmapDescriptor icon3 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
-                // Log.i("MY POINTERS " );
-                //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
-                //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
-                mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon3));
+                Location max1 = userFlood.getBoundBoxMax();
+                Location min1 = userFlood.getBoundBoxMin();
+                double latAv = (min1.getLatitude() + max1.getLatitude()) / 2;
+                double longAv = (min1.getLongitude() + max1.getLongitude()) / 2;
+                userFloodLocation = new LatLng(latAv, longAv);
+                //LatLng userLoc = userFlood;
+                BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET);
+                mMap.addMarker(new MarkerOptions().position(userFloodLocation).title("YOU ARE HERE").icon(icon2));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(userFloodLocation));
+                //mMap.animateCamera(CameraUpdateFactory.zoomTo(1090));
+                //mMap.animateCamera(CameraUpdateFactory.newLatLng(userLoc));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userFloodLocation, 15));
+                /**
+                 * To Do is to either plot Tiles with Points Data or draw a polygon/layout with max and min lat and long coordinates
+                 */
+                /**
+                 * Once the flood Data is mapped we need to suggest user to better elevation in MAP using the coordinates for alternate paths
+                 */
+                //Loop to iterate latLangArrayList for tiles mapping
+                for (LatLng latLng : floodIterate.getLatLngArrayList()) {
+                    //This is place holder for adding tiles as Polygon
+                    BitmapDescriptor icon3 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN);
+                    // Log.i("MY POINTERS " );
+                    //Log.i("tag", "MY POINTER Lat " + latLng.latitude);
+                    //Log.i("tag", "MY POINTER Lng " + latLng.longitude);
+                    mMap.addMarker(new MarkerOptions().position(latLng).title("POINTERS ").icon(icon3));
+                }
+
+
+                /**
+                 * Elevation API integration for safe route
+                 */
+                /**
+                 *
+                 * Restrict data by country the user is in
+                 *
+                 */
+                /**
+                 * Add timer for auto refresh of flood data
+                 */
+                //Call the method or logic to calculate the route and map
+                //line # 354
+                // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
+
             }
+            if (userFlood != null) {
+                // TODO: call route method to route to prefered location after implementing location-finding algorithm
+                LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), false);
+                ArrayList<LatLng> startEndRouting = new ArrayList<LatLng>();
+                startEndRouting.add(userFloodLocation);
+                startEndRouting.add(destination);
+                route(startEndRouting);
+                BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                mMap.addMarker(new MarkerOptions().position(destination).title("DESTINATION").icon(icon));
 
-
-            /**
-             * Elevation API integration for safe route
-             */
-            /**
-             *
-             * Restrict data by country the user is in
-             *
-             */
-            /**
-             * Add timer for auto refresh of flood data
-             */
-            //Call the method or logic to calculate the route and map
-            //line # 354
-            // https://github.com/jd-alexander/Google-Directions-Android/blob/master/sample/src/main/java/com/directions/sample/MainActivity.java
-            floodInd = 1;
-            }
-        }
-        if(userFlood!=null) {
-            // TODO: call route method to route to prefered location after implementing location-finding algorithm
-            LatLng destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), false);
-            ArrayList<LatLng> startEndRouting = new ArrayList<LatLng>();
-            startEndRouting.add(userFloodLocation);
-            startEndRouting.add(destination);
-            route(startEndRouting);
-            BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-            mMap.addMarker(new MarkerOptions().position(destination).title("DESTINATION").icon(icon));
-
-            BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-            destination2 = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), true);
-            mMap.addMarker(new MarkerOptions().position(destination2).title("ALTERNATIVE DESTINATION").icon(icon2));
+                BitmapDescriptor icon2 = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                destination2 = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList(), true);
+                mMap.addMarker(new MarkerOptions().position(destination2).title("ALTERNATIVE DESTINATION").icon(icon2));
 //            userFlood.getLatLngArrayList().remove(userFlood.getLatLngArrayList().indexOf(destination));
 //            destination = findNearestPoint(userFloodLocation, userFlood.getLatLngArrayList());
 //            startEndRouting.add(userFloodLocation);
 //            startEndRouting.add(destination);
 //            route(startEndRouting);
-        }
+            }
 //        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(0).latitude);
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(0).longitude);
 //        Log.v("tag", "NEW User Lat: " + userFlood.latLngArrayList.get(1).latitude);
 //        Log.v("tag", "NEW User Lng: " + userFlood.latLngArrayList.get(1).longitude);
 //        Log.v("tag", "User Flood Size: " + userFlood.latLngArrayList.size());
 
-        // if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
-        //if user flood is null then the user is not inside of a flood right now
-        //TODO:tell the user something if they are not inside of a flood like safe place
+            // if (userFlood.getLatLngArrayList().size() >0) {//CHANGED FROM userFlood!=null as it was not going inside the loop
+            //if user flood is null then the user is not inside of a flood right now
+            //TODO:tell the user something if they are not inside of a flood like safe place
 //            url = url + "location=" + userFloodLocation.latitude + "," + userFloodLocation.longitude + "&radius=50000&key=" + PLACES_KEY;
 //           Log.i("URL", "URL FORMED: " + url);
 //           mRequestQueue.add(mapPlacesRequest);//places webservices call is commented as this is throwing permission denied issue
-        //This widgets code is commented as it does not work as expected
+            //This widgets code is commented as it does not work as expected
 //           try {
 //               PlacePicker.IntentBuilder intentBuilder =
 //                       new PlacePicker.IntentBuilder();
@@ -543,16 +565,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //           } catch (GooglePlayServicesNotAvailableException e) {
 //               // ...
 //           }
-        // }
+            // }
 
-        //By default added end location
-        //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
-        //so we will have to create an array of points within the flood, and put the call in a for-loop,
-        //if-statement combo that will iterate through the array and get each value and pass it to the API, then check based on our parameters we have with the if-statement]
-        //Based on the previous steps,
-        //we can add all the eligible points to and array and plot these, then use one of the available algorithms{breath first search, depth first search, etc.]
-        //https://maps.googleapis.com/maps/api/elevation/json?locations=35.56360612905,-112.710044076&key=AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28 -> Current Elevation for flood data
-        //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=35.56360612905,-112.710044076&radius=150000&types=food&name=cruise&key=AIzaSyCOtzm-A5wVw1ixYKs0uWSd94NITbJ-93c
+            //By default added end location
+            //instead we need to make web services call to Google Elevation API[This accepts a point as the parameter,
+            //so we will have to create an array of points within the flood, and put the call in a for-loop,
+            //if-statement combo that will iterate through the array and get each value and pass it to the API, then check based on our parameters we have with the if-statement]
+            //Based on the previous steps,
+            //we can add all the eligible points to and array and plot these, then use one of the available algorithms{breath first search, depth first search, etc.]
+            //https://maps.googleapis.com/maps/api/elevation/json?locations=35.56360612905,-112.710044076&key=AIzaSyAaVTprHAxbZ3Q5GaSwA4A1r7V0nU4Vx28 -> Current Elevation for flood data
+            //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=35.56360612905,-112.710044076&radius=150000&types=food&name=cruise&key=AIzaSyCOtzm-A5wVw1ixYKs0uWSd94NITbJ-93c
+        floodInd = 10;
+        }
     }
 
     private LatLng findNearestPoint(LatLng test, List<LatLng> target, boolean secondClosest) {
@@ -623,7 +647,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void route(ArrayList<LatLng> startEndLocs) {
 
         //progressDialog = ProgressDialog.show(this, "Please wait.",
-               // "Fetching route information.", true);
+        // "Fetching route information.", true);
         Routing routing = new Routing.Builder()
                 .travelMode(Routing.TravelMode.WALKING)
                 .withListener(this)
@@ -682,14 +706,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        for(int i = 0; i<100; i++) {
 //            Toast.makeText(getApplicationContext(), "Your destination is: " + route.getEndAddressText() + ", Distance: " + route.getDistanceText() + ", Duration: " + route.getDurationText() + " by walking.", Toast.LENGTH_LONG).show();
 //        }
-
-            //Toast toast = new Toast(getApplicationContext());
-            //toast.setGravity(Gravity.TOP|Gravity.START, 0, 0);
-
-            for(int j = 0; j<10; j++) {
-                Toast.makeText(getApplicationContext(), "ALERT! Your coordinates are within a flood zone. \n Please follow the given route to safety.", Toast.LENGTH_LONG).show();
-                //toast.makeText(getApplicationContext(), "These are your instructions", Toast.LENGTH_LONG).show();
-            }
 
             int i = 0;
 

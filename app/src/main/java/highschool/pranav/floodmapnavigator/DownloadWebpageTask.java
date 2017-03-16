@@ -24,7 +24,7 @@ public class DownloadWebpageTask extends AsyncTask<String, Void, String> {
 
     public interface FloodAssyncResponse {
         //define any methods
-        public void processFloodData(ArrayList<Flood> floods);
+        void processFloodData(ArrayList<Flood> floods);
 
     }
 
