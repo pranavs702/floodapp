@@ -1,4 +1,5 @@
 # Flood Escape Guidance App
+Test App
 This Android App is for guiding to an alternative location in case of floods
 
 #Motivation
